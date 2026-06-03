@@ -1538,7 +1538,7 @@ const poissons = [
     {
             id: 59,
             nom: "Poisson-porc-épic",
-            image: "assets/images/poissons/poisson-porc-epic.webp",
+            image: "assets/images/poissons/poisson-porcepic.webp",
             prix: 250,
             prixPollux: 375,
             localisation: "Océan",
