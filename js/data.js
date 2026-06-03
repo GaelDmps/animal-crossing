@@ -56,7 +56,7 @@ const poissons = [
     {
             id: 2,
             nom: "Arapaïma",
-            image: "assets/images/poissons/arapaima.webp",
+            image: "assets/images/poissons/arapaïma.webp",
             prix: 10000,
             prixPollux: 15000,
             localisation: "Rivière",
@@ -498,7 +498,7 @@ const poissons = [
     {
             id: 19,
             nom: "Cœlacanthe",
-            image: "assets/images/poissons/clacanthe.webp",
+            image: "assets/images/poissons/coelacanthe.webp",
             prix: 15000,
             prixPollux: 22500,
             localisation: "Océan (pluie)",
@@ -1148,7 +1148,7 @@ const poissons = [
     {
             id: 44,
             nom: "Murène Ruban Bleue",
-            image: "assets/images/poissons/murene-ruban-bleue.webp",
+            image: "assets/images/poissons/murene-ruban-bleu.webp",
             prix: 600,
             prixPollux: 900,
             localisation: "Océan",
