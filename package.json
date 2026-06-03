@@ -1,0 +1,12 @@
+{
+  "name": "animal-crossing",
+  "version": "1.0.0",
+  "description": "Site web statique pour suivre votre collection de **Poissons**, **Insectes** et **Créatures marines** dans Animal Crossing: New Horizons.",
+  "main": "index.js",
+  "scripts": {
+    "generer-donnees": "node scripts/generer-data.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

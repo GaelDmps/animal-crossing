@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Suivi de collection Animal Crossing: New Horizons — Poissons, Insectes, Créatures marines, Fossiles, Œuvres d'art" />
+    <title>Collection Animal Crossing</title>
+
+    <!-- Feuille de styles principale -->
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+    <!-- ====================================================
+         EN-TÊTE PRINCIPAL (sticky)
+         ==================================================== -->
+    <header id="header">
+        <!-- Titre cliquable → retour à l'accueil -->
+        <h1 id="titre-principal">
+            🏝️ Collection Animal Crossing
+        </h1>
+
+        <!-- Bouton retour accueil (affiché uniquement sur les pages catégorie) -->
+        <button id="btn-accueil" aria-label="Retour à l'accueil">
+            ← Accueil
+        </button>
+    </header>
+
+    <!-- ====================================================
+         CONTENU PRINCIPAL
+         ==================================================== -->
+    <main id="contenu-principal">
+
+        <!-- ================================================
+             PAGE D'ACCUEIL
+             Affichée par défaut, masquée lors de la navigation
+             vers une catégorie.
+             ================================================ -->
+        <section id="page-accueil" aria-label="Page d'accueil">
+
+            <!-- Introduction -->
+            <div class="accueil-intro">
+                <h2>Ma Collection</h2>
+                <p>
+                    Sélectionnez une catégorie pour consulter et gérer
+                    votre collection de spécimens.
+                </p>
+            </div>
+
+            <!-- Grille des catégories -->
+            <div class="grille-categories" role="list">
+
+                <!-- Carte Poissons -->
+                <article
+                    class="carte-categorie"
+                    data-categorie="poissons"
+                    role="listitem"
+                    tabindex="0"
+                    aria-label="Voir la collection de poissons"
+                >
+                    <span class="emoji" aria-hidden="true">🐟</span>
+                    <h3>Poissons</h3>
+                    <p class="sous-titre">Rivières, lacs &amp; océan</p>
+                    <!-- Compteur mis à jour dynamiquement par JS -->
+                    <span class="carte-compteur" id="compteur-poissons">0 / 0 (0%)</span>
+                </article>
+
+                <!-- Carte Insectes -->
+                <article
+                    class="carte-categorie"
+                    data-categorie="insectes"
+                    role="listitem"
+                    tabindex="0"
+                    aria-label="Voir la collection d'insectes"
+                >
+                    <span class="emoji" aria-hidden="true">🐞</span>
+                    <h3>Insectes</h3>
+                    <p class="sous-titre">Fleurs, arbres &amp; rochers</p>
+                    <span class="carte-compteur" id="compteur-insectes">0 / 0 (0%)</span>
+                </article>
+
+                <!-- Carte Créatures marines -->
+                <article
+                    class="carte-categorie"
+                    data-categorie="marines"
+                    role="listitem"
+                    tabindex="0"
+                    aria-label="Voir la collection de créatures marines"
+                >
+                    <span class="emoji" aria-hidden="true">🦑</span>
+                    <h3>Créatures marines</h3>
+                    <p class="sous-titre">Fond de l'océan</p>
+                    <span class="carte-compteur" id="compteur-marines">0 / 0 (0%)</span>
+                </article>
+
+                <!-- Carte Fossiles -->
+                <article
+                    class="carte-categorie"
+                    data-categorie="fossiles"
+                    role="listitem"
+                    tabindex="0"
+                    aria-label="Collection de fossiles"
+                >
+                    <span class="emoji" aria-hidden="true">🦴</span>
+                    <h3>Fossiles</h3>
+                    <p class="sous-titre">Musée — squelettes complets</p>
+                    <span class="carte-compteur" id="compteur-fossiles">0 / 0 (0%)</span>
+                </article>
+
+                <!-- Carte Œuvres d'art -->
+                <article
+                    class="carte-categorie"
+                    data-categorie="peintures"
+                    role="listitem"
+                    tabindex="0"
+                    aria-label="Guide des peintures et statues"
+                >
+                    <span class="emoji" aria-hidden="true">🖼️</span>
+                    <h3>Œuvres d'art</h3>
+                    <p class="sous-titre">Peintures &amp; statues — vraies et fausses</p>
+                    <span class="carte-compteur" id="compteur-peintures">43 œuvres</span>
+                </article>
+
+            </div>
+            <!-- /.grille-categories -->
+
+        </section>
+        <!-- /#page-accueil -->
+
+
+        <!-- ================================================
+             PAGE CATÉGORIE
+             Masquée par défaut, construite dynamiquement via JS
+             quand l'utilisateur clique sur une carte.
+             Grille de cartes générée par rendreVueCategorie() dans app.js.
+             ================================================ -->
+        <section id="page-categorie" aria-label="Vue catégorie">
+            <!-- Contenu généré par JavaScript -->
+        </section>
+        <!-- /#page-categorie -->
+
+        <section id="page-peintures" aria-label="Guide des œuvres d'art">
+            <!-- Contenu généré par JavaScript -->
+        </section>
+        <!-- /#page-peintures -->
+
+        <section id="page-fossiles" aria-label="Collection de fossiles">
+            <!-- Contenu généré par JavaScript -->
+        </section>
+        <!-- /#page-fossiles -->
+
+    </main>
+    <!-- /#contenu-principal -->
+
+
+    <!-- ====================================================
+         PIED DE PAGE
+         ==================================================== -->
+    <!-- Lightbox — agrandissement des images au clic -->
+    <div
+        id="lightbox"
+        class="lightbox"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lightbox-titre"
+        aria-hidden="true"
+    >
+        <div class="lightbox-contenu">
+            <div class="lightbox-header">
+                <span id="lightbox-titre" class="lightbox-titre"></span>
+                <button type="button" class="lightbox-fermer" aria-label="Fermer">✕</button>
+            </div>
+            <div class="lightbox-body">
+                <img id="lightbox-img" class="lightbox-img" src="" alt="" />
+            </div>
+        </div>
+    </div>
+
+
+    <footer>
+        <p>
+            🏝️ Collection Animal Crossing: New Horizons &nbsp;|&nbsp;
+            Données sauvegardées localement dans votre navigateur
+        </p>
+        <p class="footer-droits">
+            © Gael Deschamps — Tous droits réservés
+        </p>
+    </footer>
+
+
+    <!-- ====================================================
+         SCRIPTS
+         Ordre important : data.js doit être chargé AVANT app.js
+         car app.js référence les tableaux définis dans data.js.
+         ==================================================== -->
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>
