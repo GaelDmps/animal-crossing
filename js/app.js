@@ -1348,7 +1348,13 @@ const etatArt = {
     recherche: '',
     type: 'tous',
     avecContrefacon: false,
+    afficherPossedes: true,
+    afficherNonPossedes: true,
+    prixMin: '',
+    prixMax: '',
 };
+
+const PRIX_OEUVRE_ART_DEFAUT = 4980;
 
 /**
  * Affiche le guide vraies / fausses des œuvres d'art.
@@ -1468,6 +1474,13 @@ function rendreFiltresGuideArt(conteneur) {
     conteneur.appendChild(ligneType);
 
     const ligneOptions = creerElement('div', { className: 'filtre-ligne filtre-ligne-options' });
+    const groupeCollection = creerElement('div', { className: 'filtre-groupe filtre-groupe-art' });
+    groupeCollection.appendChild(creerElement('label', { textContent: 'Collection' }));
+    groupeCollection.appendChild(creerFiltresPossessionArt());
+    ligneOptions.appendChild(groupeCollection);
+    ligneOptions.appendChild(creerGroupeFiltre('Prix min (🔔)', creerInputPrixArt('prixMin')));
+    ligneOptions.appendChild(creerGroupeFiltre('Prix max (🔔)', creerInputPrixArt('prixMax')));
+
     const labelCb = creerElement('label', { className: 'filtre-checkbox' });
     const cb = creerElement('input', { type: 'checkbox' });
     cb.checked = etatArt.avecContrefacon;
@@ -1481,11 +1494,70 @@ function rendreFiltresGuideArt(conteneur) {
 }
 
 /**
+ * Cases Possédés / Non possédés pour le guide art.
+ * @returns {HTMLElement}
+ */
+function creerFiltresPossessionArt() {
+    const conteneur = creerElement('div', { className: 'filtre-cases-possession' });
+
+    [
+        { cle: 'afficherPossedes', label: 'Possédés' },
+        { cle: 'afficherNonPossedes', label: 'Non possédés' },
+    ].forEach(({ cle, label }) => {
+        const ligne = creerElement('label', { className: 'filtre-case-label' });
+        const checkbox = creerElement('input', {
+            type: 'checkbox',
+            className: 'filtre-case-checkbox',
+        });
+        checkbox.checked = etatArt[cle];
+        checkbox.addEventListener('change', () => {
+            etatArt[cle] = checkbox.checked;
+            rendreCartesGuideArt(document.getElementById('guide-art-grille'));
+        });
+        ligne.append(checkbox, document.createTextNode(label));
+        conteneur.appendChild(ligne);
+    });
+
+    return conteneur;
+}
+
+/**
+ * Input numérique pour filtrer les œuvres par prix.
+ * @param {'prixMin'|'prixMax'} cleFiltreEtat
+ * @returns {HTMLElement}
+ */
+function creerInputPrixArt(cleFiltreEtat) {
+    const input = creerElement('input', {
+        type: 'number',
+        min: '0',
+        step: '1',
+        className: 'filtre-input',
+        placeholder: 'ex: 4980',
+        value: etatArt[cleFiltreEtat],
+    });
+    input.addEventListener('input', () => {
+        etatArt[cleFiltreEtat] = input.value;
+        rendreCartesGuideArt(document.getElementById('guide-art-grille'));
+    });
+    return input;
+}
+
+/**
+ * Prix d'achat d'une œuvre. Les données peuvent surcharger le prix standard.
+ * @param {object} oeuvre
+ * @returns {number}
+ */
+function prixOeuvreArt(oeuvre) {
+    return Number(oeuvre.prix ?? PRIX_OEUVRE_ART_DEFAUT);
+}
+
+/**
  * Filtre les œuvres selon etatArt.
+ * @param {object[]} [oeuvres=oeuvresArt]
  * @returns {object[]}
  */
-function filtrerOeuvresArt() {
-    let liste = [...oeuvresArt];
+function filtrerOeuvresArt(oeuvres = oeuvresArt) {
+    let liste = [...oeuvres];
 
     if (etatArt.type !== 'tous') {
         liste = liste.filter(o => o.type === etatArt.type);
@@ -1494,6 +1566,18 @@ function filtrerOeuvresArt() {
     if (etatArt.avecContrefacon) {
         liste = liste.filter(o => o.imageFausse);
     }
+
+    liste = liste.filter(o => {
+        if (!etatArt.afficherPossedes && o.obtenu) return false;
+        if (!etatArt.afficherNonPossedes && !o.obtenu) return false;
+        if (etatArt.prixMin !== '' && !isNaN(Number(etatArt.prixMin))) {
+            if (prixOeuvreArt(o) < Number(etatArt.prixMin)) return false;
+        }
+        if (etatArt.prixMax !== '' && !isNaN(Number(etatArt.prixMax))) {
+            if (prixOeuvreArt(o) > Number(etatArt.prixMax)) return false;
+        }
+        return true;
+    });
 
     const q = normaliser(etatArt.recherche.trim());
     if (q) {
@@ -1514,10 +1598,11 @@ function rendreCartesGuideArt(conteneur) {
     const idsObtenus = new Map(
         chargerEtatObtenu('peintures', oeuvresArt).map(o => [o.id, o.obtenu]),
     );
-    const liste = filtrerOeuvresArt().map(o => ({
+    const oeuvresAvecEtat = oeuvresArt.map(o => ({
         ...o,
         obtenu: idsObtenus.get(o.id) ?? false,
     }));
+    const liste = filtrerOeuvresArt(oeuvresAvecEtat);
 
     const stats = document.getElementById('guide-art-stats');
     if (stats) {
@@ -1568,6 +1653,7 @@ function creerCarteGuideArt(oeuvre) {
         className: `guide-art-badge guide-art-badge--${oeuvre.type}`,
         textContent: oeuvre.type === 'peinture' ? 'Peinture' : 'Statue',
     }));
+    titres.appendChild(creerPrixGuideArt(oeuvre));
     entete.appendChild(titres);
     carte.appendChild(entete);
 
@@ -1587,6 +1673,17 @@ function creerCarteGuideArt(oeuvre) {
     carte.appendChild(desc);
 
     return carte;
+}
+
+/**
+ * Prix affiché dans l'en-tête d'une carte œuvre.
+ * @param {object} oeuvre
+ * @returns {HTMLElement}
+ */
+function creerPrixGuideArt(oeuvre) {
+    const prix = creerElement('span', { className: 'guide-art-prix' });
+    prix.textContent = `${prixOeuvreArt(oeuvre).toLocaleString('fr-FR')} 🔔`;
+    return prix;
 }
 
 /**
@@ -1633,6 +1730,10 @@ function creerBlocImageArt(src, nom, variante, sansImage = false, typeOeuvre = '
 
 const etatFossiles = {
     recherche: '',
+    afficherPossedes: true,
+    afficherNonPossedes: true,
+    prixMin: '',
+    prixMax: '',
 };
 
 function afficherFossiles() {
@@ -1676,10 +1777,20 @@ function rendrePageFossiles() {
     intro.textContent = 'Cochez les fossiles que vous avez déjà donnés au musée.';
     page.appendChild(intro);
 
-    const filtres = creerElement('div', { className: 'panneau-filtres guide-art-filtres' });
-    const ligneRecherche = creerElement('div', { className: 'filtre-ligne' });
-    const labelRecherche = creerElement('label', { htmlFor: 'fossiles-recherche' });
-    labelRecherche.textContent = 'Rechercher';
+    const filtres = creerElement('div', { className: 'panneau-filtres' });
+    rendreFiltresFossiles(filtres);
+    page.appendChild(filtres);
+
+    const groupesWrapper = creerElement('div', { className: 'fossiles-groupes', id: 'fossiles-groupes' });
+    page.appendChild(groupesWrapper);
+    rendreGroupesFossiles(groupesWrapper);
+}
+
+function rendreFiltresFossiles(conteneur) {
+    conteneur.innerHTML = '';
+
+    const ligne = creerElement('div', { className: 'filtres-ligne' });
+
     const inputRecherche = creerElement('input', {
         type: 'search',
         id: 'fossiles-recherche',
@@ -1689,21 +1800,89 @@ function rendrePageFossiles() {
     });
     inputRecherche.addEventListener('input', () => {
         etatFossiles.recherche = inputRecherche.value;
-        rendreGroupesFossiles(document.getElementById('fossiles-groupes'));
+        rafraichirFossiles();
     });
-    ligneRecherche.append(labelRecherche, inputRecherche);
-    filtres.appendChild(ligneRecherche);
-    page.appendChild(filtres);
+    ligne.appendChild(creerGroupeFiltre('Rechercher', inputRecherche, 'filtre-recherche'));
+    ligne.appendChild(creerGroupeFiltre('Collection', creerFiltresPossessionFossiles()));
+    ligne.appendChild(creerGroupeFiltre('Prix min (🔔)', creerInputPrixFossile('prixMin')));
+    ligne.appendChild(creerGroupeFiltre('Prix max (🔔)', creerInputPrixFossile('prixMax')));
 
-    const groupesWrapper = creerElement('div', { className: 'fossiles-groupes', id: 'fossiles-groupes' });
-    page.appendChild(groupesWrapper);
-    rendreGroupesFossiles(groupesWrapper);
+    const btnReset = creerElement('button', {
+        type: 'button',
+        className: 'btn-reset-filtres',
+        textContent: 'Réinitialiser',
+    });
+    btnReset.addEventListener('click', () => {
+        etatFossiles.recherche = '';
+        etatFossiles.afficherPossedes = true;
+        etatFossiles.afficherNonPossedes = true;
+        etatFossiles.prixMin = '';
+        etatFossiles.prixMax = '';
+        rendrePageFossiles();
+    });
+    ligne.appendChild(btnReset);
+
+    conteneur.appendChild(ligne);
+}
+
+function creerFiltresPossessionFossiles() {
+    const conteneur = creerElement('div', { className: 'filtre-cases-possession' });
+
+    [
+        { cle: 'afficherPossedes', label: 'Possédés' },
+        { cle: 'afficherNonPossedes', label: 'Non possédés' },
+    ].forEach(({ cle, label }) => {
+        const ligne = creerElement('label', { className: 'filtre-case-label' });
+        const checkbox = creerElement('input', {
+            type: 'checkbox',
+            className: 'filtre-case-checkbox',
+        });
+        checkbox.checked = etatFossiles[cle];
+        checkbox.addEventListener('change', () => {
+            etatFossiles[cle] = checkbox.checked;
+            rafraichirFossiles();
+        });
+        ligne.append(checkbox, document.createTextNode(label));
+        conteneur.appendChild(ligne);
+    });
+
+    return conteneur;
+}
+
+function creerInputPrixFossile(cleFiltreEtat) {
+    const input = creerElement('input', {
+        type: 'number',
+        min: '0',
+        step: '1',
+        className: 'filtre-input',
+        placeholder: 'ex: 1000',
+        value: etatFossiles[cleFiltreEtat],
+    });
+    input.addEventListener('input', () => {
+        etatFossiles[cleFiltreEtat] = input.value;
+        rafraichirFossiles();
+    });
+    return input;
+}
+
+function rafraichirFossiles() {
+    rendreGroupesFossiles(document.getElementById('fossiles-groupes'));
 }
 
 function filtrerFossiles(pieces) {
     const q = normaliser(etatFossiles.recherche.trim());
-    if (!q) return pieces;
-    return pieces.filter(p => normaliser(p.nom).includes(q));
+    return pieces.filter(p => {
+        if (q && !normaliser(p.nom).includes(q)) return false;
+        if (!etatFossiles.afficherPossedes && p.obtenu) return false;
+        if (!etatFossiles.afficherNonPossedes && !p.obtenu) return false;
+        if (etatFossiles.prixMin !== '' && !isNaN(Number(etatFossiles.prixMin))) {
+            if (Number(p.prix || 0) < Number(etatFossiles.prixMin)) return false;
+        }
+        if (etatFossiles.prixMax !== '' && !isNaN(Number(etatFossiles.prixMax))) {
+            if (Number(p.prix || 0) > Number(etatFossiles.prixMax)) return false;
+        }
+        return true;
+    });
 }
 
 function rendreGroupesFossiles(conteneur) {
@@ -1721,7 +1900,7 @@ function rendreGroupesFossiles(conteneur) {
         })));
         if (pieces.length === 0) return;
         affiches += pieces.length;
-        conteneur.appendChild(creerTableauFossileGroupe(groupe.nom, pieces));
+        conteneur.appendChild(creerCartesFossileGroupe(groupe.nom, pieces));
     });
 
     if (affiches === 0) {
@@ -1737,67 +1916,59 @@ function rendreGroupesFossiles(conteneur) {
     }
 }
 
-function creerTableauFossileGroupe(nomGroupe, pieces) {
+function creerCartesFossileGroupe(nomGroupe, pieces) {
     const section = creerElement('section', { className: 'fossile-groupe' });
     section.appendChild(creerElement('h3', { className: 'fossile-groupe-titre', textContent: nomGroupe }));
 
-    const wrapper = creerElement('div', { className: 'fossile-tableau-wrapper' });
-    const tableau = creerElement('table', { className: 'tableau-collection fossile-tableau' });
-    const thead = creerElement('thead');
-    const entete = creerElement('tr');
-    ['', 'Nom', 'Image', 'Prix (🔔)'].forEach((texte, i) => {
-        const th = creerElement('th', { scope: 'col', textContent: texte });
-        if (i === 0) th.className = 'col-checkbox';
-        if (i === 1) th.className = 'col-nom';
-        entete.appendChild(th);
-    });
-    thead.appendChild(entete);
-    tableau.appendChild(thead);
-
-    const tbody = creerElement('tbody');
-    pieces.forEach(piece => tbody.appendChild(creerLigneFossile(piece)));
-    tableau.appendChild(tbody);
-    wrapper.appendChild(tableau);
-    section.appendChild(wrapper);
+    const grille = creerElement('div', { className: 'fossiles-cartes-grid' });
+    pieces.forEach(piece => grille.appendChild(creerCarteFossile(piece)));
+    section.appendChild(grille);
     return section;
 }
 
-function creerLigneFossile(piece) {
-    const tr = creerElement('tr', { className: piece.obtenu ? 'obtenu' : '' });
+function creerCarteFossile(piece) {
+    const carte = creerElement('article', { className: `fossile-carte${piece.obtenu ? ' obtenu' : ''}` });
 
-    const tdCb = creerElement('td', { className: 'col-checkbox' });
-    tdCb.appendChild(creerCheckboxObtenuItem(piece, 'fossiles', tr, () => {
+    const check = creerElement('div', { className: 'fossile-carte-check' });
+    check.appendChild(creerCheckboxObtenuItem(piece, 'fossiles', carte, () => {
         const barre = document.getElementById('barre-progression-fossiles');
         if (barre) {
             rendreProgressionLibre('Fossiles', chargerEtatObtenu('fossiles', tousLesFossiles()), barre);
         }
     }));
-    tr.appendChild(tdCb);
+    carte.appendChild(check);
 
-    const tdNom = creerElement('td', { className: 'col-nom' });
-    tdNom.textContent = piece.nom;
-    tr.appendChild(tdNom);
-
-    const tdImg = creerElement('td', { className: 'col-image' });
+    const imageCadre = creerElement('div', { className: 'fossile-carte-image-cadre' });
     if (piece.image) {
         const img = creerElement('img', {
             src: piece.image,
             alt: piece.nom,
-            className: 'vignette-img vignette-cliquable fossile-vignette',
+            className: 'vignette-cliquable fossile-carte-img',
             loading: 'lazy',
         });
         img.addEventListener('click', () => ouvrirLightbox(piece.image, piece.nom));
-        tdImg.appendChild(img);
+        imageCadre.appendChild(img);
+    } else {
+        imageCadre.appendChild(creerElement('span', {
+            className: 'img-placeholder img-placeholder-carte fossile-carte-placeholder',
+            textContent: 'IMG',
+        }));
     }
-    tr.appendChild(tdImg);
+    carte.appendChild(imageCadre);
 
-    const tdPrix = creerElement('td', { className: 'col-prix' });
-    tdPrix.textContent = piece.prix != null
+    carte.appendChild(creerElement('h4', { className: 'fossile-carte-nom', textContent: piece.nom }));
+
+    const prix = creerElement('div', { className: 'fossile-carte-prix' });
+    prix.appendChild(creerElement('span', { className: 'prix-label', textContent: 'Prix' }));
+    prix.appendChild(creerElement('span', {
+        className: 'prix-valeur',
+        textContent: piece.prix != null
         ? Number(piece.prix).toLocaleString('fr-FR')
-        : '—';
-    tr.appendChild(tdPrix);
+        : '—',
+    }));
+    carte.appendChild(prix);
 
-    return tr;
+    return carte;
 }
 
 /* ============================================================
